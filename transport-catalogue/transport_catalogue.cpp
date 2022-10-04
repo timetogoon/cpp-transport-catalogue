@@ -2,7 +2,7 @@
 
 using namespace std;
 
-namespace transport_catalogue::primary
+namespace transport_catalogue
 {
     void Transport_catalogue::AddStop(string_view stop_name, const double latitude, const double longitude)
     {
@@ -24,12 +24,11 @@ namespace transport_catalogue::primary
         busname_to_bus_.emplace(buses_.back().name, &buses_.back());
         for (auto& stop : stops)
         {
-            stop_to_buses_[GetStopPtr(stop->name)->name].insert(GetBusptr(bus_number)->name);
-        }
-        
+            stop_to_buses_[GetStopptr(stop->name)->name].insert(GetBusptr(bus_number)->name);
+        }          
     }
 
-    const Stop* Transport_catalogue::GetStopPtr(const string& name) const 
+    const Stop* Transport_catalogue::GetStopptr(const string& name) const 
     {
         if (stopname_to_stop_.count(name) == 0)
         {
@@ -78,13 +77,20 @@ namespace transport_catalogue::primary
     }
 
     const std::unordered_set<std::string_view> Transport_catalogue::GetStopsForBuses(const std::string& name) const
-    {
-        return stop_to_buses_.at(name);
+    {        
+        if (stop_to_buses_.count(name) == 0)
+        {
+            return {};
+        }
+        else
+        {
+            return stop_to_buses_.at(name);
+        }
     }
 
-    const StopsForBusResponse Transport_catalogue::GetBusInfo(const string& bus) const 
+    const domain::StopsForBusResponse Transport_catalogue::GetBusInfo(const string& bus) const 
     {
-        StopsForBusResponse businfo = {};
+        domain::StopsForBusResponse businfo = {};
         if (busname_to_bus_.count(bus) == 0)
         {
             return businfo;
@@ -92,9 +98,9 @@ namespace transport_catalogue::primary
         else {
             double length = 0.0, dist = 0.0;
             size_t stopsquantity = 0;
-            for (auto i = 0; i < busname_to_bus_.at(bus)->buses_stops.size() - 1; i++)
+            for (size_t i = 0; i < busname_to_bus_.at(bus)->buses_stops.size() - 1; i++)
             {                
-                length += coordinates::ComputeDistance(busname_to_bus_.at(bus)->buses_stops[i]->coord,
+                length += geo::ComputeDistance(busname_to_bus_.at(bus)->buses_stops[i]->coord,
                     busname_to_bus_.at(bus)->buses_stops[i + 1]->coord);
                 if (distances_.count({ busname_to_bus_.at(bus)->buses_stops[i], //если есть *A,*B
                     busname_to_bus_.at(bus)->buses_stops[i + 1] }) > 0) 
@@ -112,7 +118,7 @@ namespace transport_catalogue::primary
             {
                 length *= 2; //увеличить географическую длину на 2
                 stopsquantity = busname_to_bus_.at(bus)->buses_stops.size() * 2 - 1;
-                for (auto i = 0; i < busname_to_bus_.at(bus)->buses_stops.size() - 1; i++)
+                for (size_t i = 0; i < busname_to_bus_.at(bus)->buses_stops.size() - 1; i++)
                 {
                     if (distances_.count({ busname_to_bus_.at(bus)->buses_stops[i + 1], //если есть *A,*B
                         busname_to_bus_.at(bus)->buses_stops[i] }) > 0)
@@ -135,22 +141,27 @@ namespace transport_catalogue::primary
             for (auto st : busname_to_bus_.at(bus)->buses_stops) {
                 uniq.emplace(st->name);
             }
-            businfo = { stopsquantity, uniq.size(), dist, dist/length};
+            businfo = { stopsquantity, uniq.size(), dist, dist/length };
         }
         return businfo;
     }
 
+    const std::deque<Bus> Transport_catalogue::GetBuses() const
+    {
+        return buses_;
+    }
+
     void Transport_catalogue::SetDistances(string_view stop1_name, string_view stop2_name, const size_t dist) 
     {
-        auto ptr1 = GetStopPtr(string(stop1_name));
-        auto ptr2 = GetStopPtr(string(stop2_name));
+        auto ptr1 = GetStopptr(string(stop1_name));
+        auto ptr2 = GetStopptr(string(stop2_name));
         distances_[{const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2)}] = dist;
     }
 
     size_t Transport_catalogue::GetDistance(const string_view stop1_name, const string_view stop2_name) const
     {
-        auto ptr1 = GetStopPtr(string(stop1_name));
-        auto ptr2 = GetStopPtr(string(stop2_name));
+        auto ptr1 = GetStopptr(string(stop1_name));
+        auto ptr2 = GetStopptr(string(stop2_name));
         if (distances_.count({ const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2) }) > 0)
         {
             return distances_.at({ const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2) });

@@ -4,7 +4,7 @@ using namespace std;
 using namespace transport_catalogue;
 using namespace literals;
 
-    void output::GetInfo(primary::Transport_catalogue& name, std::istream& input, std::ostream& output)
+    void output::GetInfo(Transport_catalogue& name, std::istream& input, std::ostream& output)
     {
         size_t request;
         input >> request;

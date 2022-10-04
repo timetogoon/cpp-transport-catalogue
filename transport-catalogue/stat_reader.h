@@ -4,5 +4,5 @@
 
 namespace output 
 {
-	void GetInfo(transport_catalogue::primary::Transport_catalogue& name, std::istream& input = std::cin, std::ostream& output = std::cout);
+	void GetInfo(transport_catalogue::Transport_catalogue& name, std::istream& input = std::cin, std::ostream& output = std::cout);
 }

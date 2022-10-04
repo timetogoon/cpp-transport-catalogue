@@ -20,7 +20,7 @@ namespace input::detail
         return result;
     }
     
-    void InsertDataDist(primary::Transport_catalogue& name, vector<string> dist)
+    void InsertDataDist(Transport_catalogue& name, vector<string> dist)
     {
         for (int i = 0; i < dist.size(); i++)
         {
@@ -50,104 +50,82 @@ namespace input::detail
 
 namespace input::parsing
 {
-    string ParseStop(primary::Transport_catalogue& name, string data)
+void AddToCatalogue(Transport_catalogue& name, vector<string> data)
+{
+    using namespace literals;
+
+    vector<string> todist;
+    for (int i = 0; i < data.size(); i++)
     {
-        string todist;
-        data = data.substr(5, data.npos);
-        auto bus_stop_name = data.substr(data.find_first_not_of(' '), data.find(':'));
-        data = data.substr(data.find_first_of(':') + 2, data.find_last_not_of(' '));
-        double lat = 0.0;
-        double longt = 0.0;
-        stringstream sslat, sslong;
-        sslat << data.substr(data.find_first_not_of(' '), data.find_first_of(','));
-        sslat >> lat;
-        data.erase(data.find_first_not_of(' '), data.find_first_of(',') + 2);
-        if (data.find_first_of(',') != data.npos)
+        auto command = data[i].substr(data[i].find_first_not_of(' '), 4);
+        if (command.find("Stop"s) != data[i].npos)  //вставляем остановку
         {
-            sslong << data.substr(data.find_first_not_of(' '), data.find_first_of(','));
-            data.erase(data.find_first_not_of(' '), data.find_first_of(',') + 2);
-            todist = bus_stop_name + ',' + ' ' + data;
-        }
-        else
-        {
-            sslong << data.substr(data.find_first_not_of(' '), data.find_last_not_of(' ') + 1);
-        }
-        sslong >> longt;
-        name.AddStop(bus_stop_name, lat, longt);
-        return todist;
-    }
-
-    void ParseBus(primary::Transport_catalogue& name, string data)
-    {
-        auto bus_number = data.substr(4, data.find_first_of(":") - 4);
-        vector<const Stop*> bus_stops;
-        if (data.find('>') != data.npos) //если маршрут кольцевой
-        {
-            data = data.substr(data.find(':') + 2, data.find_last_not_of(' '));
-            while (data.length() != 0) {
-                if (data.find('>') == data.npos)
-                {
-                    bus_stops.push_back(name.GetStopPtr(data.substr(data.find_first_not_of(' '),
-                        data.find_last_not_of(' ') + 1)));
-                    data.clear();
-                }
-                else
-                {
-                    bus_stops.push_back(name.GetStopPtr(data.substr(data.find_first_not_of(' '),
-                        data.find_first_of('>') - 1)));
-                    data = data.substr(data.find_first_of('>') + 2, data.find_last_not_of(' '));
-                }
-            }
-            name.AddBus(bus_number, bus_stops, true);
-        }
-        else
-        {
-            data = data.substr(data.find(':') + 2, data.find_last_not_of(' '));
-            while (data.length() != 0) {
-                if (data.find('-') == data.npos)
-                {
-                    bus_stops.push_back(name.GetStopPtr(data.substr(data.find_first_not_of(' '),
-                        data.find_last_not_of(' ') + 1)));
-                    data.clear();
-                }
-                else
-                {
-                    bus_stops.push_back(name.GetStopPtr(data.substr(data.find_first_not_of(' '),
-                        data.find_first_of('-') - 1)));
-                    data = data.substr(data.find_first_of('-') + 2,
-                        data.find_last_not_of(' '));
-                }
-            }
-            name.AddBus(bus_number, bus_stops, false);
-        }
-    }
-
-    void AddToCatalogue(primary::Transport_catalogue& name, vector<string> data)
-    {
-        using namespace literals;
-
-        vector<string> todist;
-
-        for (int i = 0; i < data.size(); i++)
-        {
-            auto command = data[i].substr(data[i].find_first_not_of(' '), 4);
-            if (command.find("Stop"s) != data[i].npos)  //вставляем остановку
+            data[i] = data[i].substr(5, data[i].npos);
+            auto bus_stop_name = data[i].substr(data[i].find_first_not_of(' '), data[i].find(':'));
+            data[i] = data[i].substr(data[i].find_first_of(':') + 2, data[i].find_last_not_of(' '));
+            double coordlat = 0.0, coordlongt = 0.0;
+            stringstream sslat, sslong;
+            sslat << data[i].substr(data[i].find_first_not_of(' '), data[i].find_first_of(','));
+            sslat >> coordlat;
+            data[i].erase(data[i].find_first_not_of(' '), data[i].find_first_of(',') + 2);
+            if (data[i].find_first_of(',') != data[i].npos)
             {
-                auto temp = ParseStop(name, data[i]);
-                if (temp.empty())
-                {
-                    continue;
-                }
-                else
-                {
-                    todist.push_back(temp);
-                } 
+                sslong << data[i].substr(data[i].find_first_not_of(' '), data[i].find_first_of(','));
+                data[i].erase(data[i].find_first_not_of(' '), data[i].find_first_of(',') + 2);
+                todist.push_back(bus_stop_name + ',' + ' ' + data[i]);
             }
-            else if (command.find("Bus"s) != data[i].npos) //вставляем маршрут
+            else
             {
-                ParseBus(name, data[i]);
+                sslong << data[i].substr(data[i].find_first_not_of(' '), data[i].find_last_not_of(' ') + 1);
+            }
+            sslong >> coordlongt;
+            name.AddStop(bus_stop_name, coordlat, coordlongt);
+        }
+        else if (command.find("Bus"s) != data[i].npos) //вставляем маршрут
+        {
+            auto bus_number = data[i].substr(4, data[i].find_first_of(":") - 4);
+            vector<const Stop*> bus_stops;
+            if (data[i].find('>') != data[i].npos) //если маршрут кольцевой
+            {
+                data[i] = data[i].substr(data[i].find(':') + 2, data[i].find_last_not_of(' '));
+                while (data[i].length() != 0) {
+                    if (data[i].find('>') == data[i].npos)
+                    {
+                        bus_stops.push_back(name.GetStopptr(data[i].substr(data[i].find_first_not_of(' '),
+                            data[i].find_last_not_of(' ') + 1)));
+                        data[i].clear();
+                    }
+                    else
+                    {
+                        bus_stops.push_back(name.GetStopptr(data[i].substr(data[i].find_first_not_of(' '),
+                            data[i].find_first_of('>') - 1)));
+                        data[i] = data[i].substr(data[i].find_first_of('>') + 2, data[i].find_last_not_of(' '));
+                    }
+                }
+                name.AddBus(bus_number, bus_stops, true);
+            }
+            else
+            {
+                data[i] = data[i].substr(data[i].find(':') + 2, data[i].find_last_not_of(' '));
+                while (data[i].length() != 0) {
+                    if (data[i].find('-') == data[i].npos)
+                    {
+                        bus_stops.push_back(name.GetStopptr(data[i].substr(data[i].find_first_not_of(' '),
+                            data[i].find_last_not_of(' ') + 1)));
+                        data[i].clear();
+                    }
+                    else
+                    {
+                        bus_stops.push_back(name.GetStopptr(data[i].substr(data[i].find_first_not_of(' '),
+                            data[i].find_first_of('-') - 1)));
+                        data[i] = data[i].substr(data[i].find_first_of('-') + 2,
+                            data[i].find_last_not_of(' '));
+                    }
+                }
+                name.AddBus(bus_number, bus_stops, false);
             }
         }
-        input::detail::InsertDataDist(name, move(todist));
     }
+    input::detail::InsertDataDist(name, move(todist));
+}
 }
