@@ -65,7 +65,7 @@ namespace transport_catalogue
 
             void AddBus(const std::string& bus_number, const std::vector<const Stop*> stops, const bool ring);
 
-            const Stop* GetStopptr(const std::string& name) const;
+            const Stop* GetStopPtr(const std::string& name) const;
 
             const Bus* GetBusptr(const std::string& name) const;
 

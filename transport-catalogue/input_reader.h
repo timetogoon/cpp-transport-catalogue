@@ -12,6 +12,11 @@ namespace input
     }
 
     namespace parsing {
+
+        std::string ParseStop(primary::Transport_catalogue& name, std::string data);
+
+        void ParseBus(primary::Transport_catalogue& name, std::string data);
+
         void AddToCatalogue(primary::Transport_catalogue& name, std::vector<std::string> data);
     }
 }

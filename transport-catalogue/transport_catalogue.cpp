@@ -24,12 +24,12 @@ namespace transport_catalogue::primary
         busname_to_bus_.emplace(buses_.back().name, &buses_.back());
         for (auto& stop : stops)
         {
-            stop_to_buses_[GetStopptr(stop->name)->name].insert(GetBusptr(bus_number)->name);
+            stop_to_buses_[GetStopPtr(stop->name)->name].insert(GetBusptr(bus_number)->name);
         }
         
     }
 
-    const Stop* Transport_catalogue::GetStopptr(const string& name) const 
+    const Stop* Transport_catalogue::GetStopPtr(const string& name) const 
     {
         if (stopname_to_stop_.count(name) == 0)
         {
@@ -142,15 +142,15 @@ namespace transport_catalogue::primary
 
     void Transport_catalogue::SetDistances(string_view stop1_name, string_view stop2_name, const size_t dist) 
     {
-        auto ptr1 = GetStopptr(string(stop1_name));
-        auto ptr2 = GetStopptr(string(stop2_name));
+        auto ptr1 = GetStopPtr(string(stop1_name));
+        auto ptr2 = GetStopPtr(string(stop2_name));
         distances_[{const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2)}] = dist;
     }
 
     size_t Transport_catalogue::GetDistance(const string_view stop1_name, const string_view stop2_name) const
     {
-        auto ptr1 = GetStopptr(string(stop1_name));
-        auto ptr2 = GetStopptr(string(stop2_name));
+        auto ptr1 = GetStopPtr(string(stop1_name));
+        auto ptr2 = GetStopPtr(string(stop2_name));
         if (distances_.count({ const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2) }) > 0)
         {
             return distances_.at({ const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2) });
