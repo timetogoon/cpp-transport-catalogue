@@ -353,7 +353,7 @@ namespace json {
     {
         return holds_alternative<Dict>(*this);
     }
-    
+
     //-------------------Возврат значений типов-----------------
 
     int Node::AsInt() const
@@ -519,13 +519,14 @@ namespace json {
         {
             auto res = value.AsMap();
             std::ostream& out = ptx.out;
-            out << "{\n\""sv;
+            out << "{\n"sv;
             bool firstprnt = true;
             auto mapptx = ptx.Indented();
             for (const auto& [key, value] : res)
             {
                 if (firstprnt == true)
                 {
+                    out << "\""sv;
                     out << key;
                     out << "\": "sv;
                     PrintValue(value, mapptx);

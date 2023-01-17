@@ -4,6 +4,7 @@
 #include "request_handler.h"
 #include "map_renderer.h"
 #include "json.h"
+#include "json_builder.h"
 
 namespace json_reader 
 {
@@ -24,7 +25,7 @@ namespace json_reader
 
 		void ResponsesToRequests(std::ostream& out = std::cout);
 		
-		json::Dict Requests(const json::Dict& dict, const request_h::RequestHandler& rh);
+		json::Node Requests(const json::Dict& dict, const request_h::RequestHandler& rh);
 
 		void PushRenderSettings(const json::Dict& settings);
 

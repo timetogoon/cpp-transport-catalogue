@@ -146,20 +146,21 @@ void JsonReader::BeginToMakeBase() //распределние записей в базу
 	JsonReader::PushRenderSettings(render_info_); //настройки рендеринга
 }
 
-json::Dict JsonReader::Requests(const json::Dict& dict, const request_h::RequestHandler& rh) //обработка запросов к базе
-{
-	json::Dict tempdict;
+json::Node JsonReader::Requests(const json::Dict& dict, const request_h::RequestHandler& rh) //обработка запросов к базе
+{	
 	json::Array temparr;
-	if (dict.at("type") == "Stop"s)
+	json::Builder builder;
+	if (dict.at("type"s) == "Stop"s)
 	{
-		if (tc_.FindStop(dict.at("name").AsString()).name.empty())
-		{
-			tempdict.insert({ { "request_id"s, dict.at("id"s).AsInt() },
-								  { "error_message"s, "not found"s }
-			});
-			return tempdict;
+		if (tc_.FindStop(dict.at("name"s).AsString()).name.empty())
+		{			
+			builder.StartDict()
+				.Key("request_id"s).Value(dict.at("id"s).AsInt())
+				.Key("error_message"s).Value("not found"s)
+				.EndDict();
+			return builder.Build();
 		}
-		auto result = rh.GetBusesByStop(dict.at("name").AsString());
+		auto result = rh.GetBusesByStop(dict.at("name"s).AsString());
 		std::set<std::string_view> temp(result.begin(), result.end());
 		if (!result.empty())
 		{
@@ -167,44 +168,74 @@ json::Dict JsonReader::Requests(const json::Dict& dict, const request_h::Request
 			{
 				temparr.push_back(std::string(r));
 			}
-			tempdict.insert({ { "buses"s, temparr }, { "request_id"s, dict.at("id").AsInt() } });
+			builder
+				.StartDict()
+				.Key("buses"s).StartArray();
+			for (size_t i = 0; i < temparr.size(); i++)
+			{
+				builder.Value(temparr[i]);
+			}
+			builder
+				.EndArray()
+				.Key("request_id"s).Value(dict.at("id"s).AsInt())
+				.EndDict();
+			return builder.Build();				
 		}
 		else
 		{
-			tempdict.insert({ { "request_id"s, dict.at("id"s).AsInt() },
-				  { "buses"s, temparr }
-			});
+			builder
+				.StartDict()
+				.Key("request_id"s).Value(dict.at("id"s).AsInt())
+				.Key("buses"s).StartArray();
+			for (size_t i = 0; i < temparr.size(); i++)
+			{
+				builder.Value(temparr[i]);
+			}
+			builder
+				.EndArray()
+				.EndDict();
+			return builder.Build();
 		}
 	}
-	else if (dict.at("type") == "Bus"s)
+	else if (dict.at("type"s) == "Bus"s)
 	{
-		auto result = rh.GetBusStat(dict.at("name").AsString());
+		auto result = rh.GetBusStat(dict.at("name"s).AsString());
 		if (result.has_value())
 		{
-			tempdict.insert({ { "curvature"s, result.value().curvature },
-						  { "request_id"s, dict.at("id"s).AsInt() },
-						  { "route_length"s, result.value().routelength },
-						  { "stop_count"s, static_cast<int>(result.value().stopsnumber) },
-						  { "unique_stop_count"s, static_cast<int>(result.value().uniquestops) }
-			});
+			builder.StartDict()
+				.Key("curvature"s).Value(result.value().curvature)
+				.Key("request_id"s).Value(dict.at("id"s).AsInt())
+				.Key("route_length"s).Value(result.value().routelength)
+				.Key("stop_count"s).Value(static_cast<int>(result.value().stopsnumber))
+				.Key("unique_stop_count"s).Value(static_cast<int>(result.value().uniquestops))
+				.EndDict();
+			return builder.Build();
 		}
 		else
 		{
-			tempdict.insert({ { "request_id"s, dict.at("id"s).AsInt() },
-							  { "error_message"s, "not found"s }
-			});
+			builder.StartDict()
+				.Key("request_id"s).Value(dict.at("id"s).AsInt())
+				.Key("error_message"s).Value("not found"s)
+				.EndDict()
+				.Build();
+			return builder.Build();
 		}
 	}
-	else if (dict.at("type") == "Map"s)
+	else if (dict.at("type"s) == "Map"s)
 	{
 		std::ostringstream out;
 		rh.RenderMap()
-			.Render(out);
-		tempdict.insert({ { "map"s, out.str()},
-						  { "request_id"s, dict.at("id"s).AsInt() }
-		});
+			.Render(out);		
+		builder.StartDict()
+			.Key("map"s).Value(out.str())
+			.Key("request_id"s).Value(dict.at("id"s).AsInt())
+			.EndDict();
+			return builder.Build();
 	}
-	return tempdict;
+	else
+	{
+		throw std::logic_error("Invalid request"s);
+	};
 }
 
 void JsonReader::ResponsesToRequests(std::ostream& out) //ответ на запросы к базе
