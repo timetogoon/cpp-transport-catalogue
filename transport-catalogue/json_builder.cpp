@@ -6,97 +6,76 @@ using namespace std;
 namespace json
 {
     //-----------BaseContext
-    BaseContext::BaseContext(Builder& builder)
+    Builder::BaseContext::BaseContext(Builder& builder)
         : builder_(builder)
     {
     }
 
-    DictItemContext BaseContext::StartDict()
+    Builder::DictItemContext Builder::BaseContext::StartDict()
     {
         return builder_.StartDict();
     }
 
-    KeyItemContext BaseContext::Key(string key)
+    Builder::KeyItemContext Builder::BaseContext::Key(string key)
     {
         return builder_.Key(move(key));
     }
 
-    ArrayItemContext BaseContext::StartArray()
+    Builder::ArrayItemContext Builder::BaseContext::StartArray()
     {
         return builder_.StartArray();
     }
 
-    Builder& BaseContext::EndArray()
+    Builder& Builder::BaseContext::EndArray()
     {
         return builder_.EndArray();
     }
 
-    Builder& BaseContext::EndDict()
+    Builder& Builder::BaseContext::EndDict()
     {
         return builder_.EndDict();
     }
 
-    Builder& BaseContext::Value(Node value)
+    Builder& Builder::BaseContext::Value(Node value)
     {
         return builder_.Value(move(value));
     }
 
-    Node BaseContext::Build()
+    Node Builder::BaseContext::Build()
     {
         return builder_.Build();
     }
 
     //-----------DictItemContext
-    DictItemContext::DictItemContext(Builder& builder)
-        : BaseContext(builder)
+    Builder::DictItemContext::DictItemContext(Builder& builder) 
+        : Builder::BaseContext(builder)
     {
+    }
+
+    Builder::DictItemContext Builder::KeyItemContext::Value(Node value)
+    {
+        return builder_.Value(move(value));
     }
 
     //-----------KeyItemContext
-    KeyItemContext::KeyItemContext(Builder& builder)
+    Builder::KeyItemContext::KeyItemContext(Builder& builder)
         : BaseContext(builder)
     {
-    }
-
-    ValueAfterKeyContext KeyItemContext::Value(Node value)
-    {
-        return builder_.Value(move(value));
-    }
-
-    //-----------ValueAfterKeyContext
-    ValueAfterKeyContext::ValueAfterKeyContext(Builder& builder)
-        : KeyItemContext(builder)
-    {
-    }
-
-    KeyItemContext ValueAfterKeyContext::Key(std::string key)
-    {
-        return builder_.Key(move(key));
-    }
-
-    BaseContext ValueAfterKeyContext::EndDict()
-    {
-        return builder_.EndDict();
-    }
+    }    
 
     //-----------ArrayItemContext
-    ArrayItemContext::ArrayItemContext(Builder& builder)
+    Builder::ArrayItemContext::ArrayItemContext(Builder& builder)
         : BaseContext(builder)
     {
     }
 
-    ValueAfterArrayContext ArrayItemContext::Value(Node value)
+    Builder::ArrayItemContext Builder::ArrayItemContext::Value(Node value)
     {
         return builder_.Value(move(value));
     }
-
-    //-----------ValueAfterArrayContext
-    ValueAfterArrayContext::ValueAfterArrayContext(Builder& builder)
-        : ArrayItemContext(builder)
-    {
-    }
-
-    DictItemContext Builder::StartDict()
+    
+    //-----------Builder
+    Builder::DictItemContext Builder::StartDict()
     {
         if (nodes_stack_.empty() || (!nodes_stack_.back()->IsNull() && !nodes_stack_.back()->IsArray()))
         {
@@ -120,7 +99,7 @@ namespace json
         nodes_stack_.push_back(&root_);
     }
 
-    ArrayItemContext Builder::StartArray()
+    Builder::ArrayItemContext Builder::StartArray()
     {
         if (nodes_stack_.empty() || (!nodes_stack_.back()->IsNull() && !nodes_stack_.back()->IsArray()))
         {
@@ -159,7 +138,7 @@ namespace json
         return *this;
     }
 
-    KeyItemContext Builder::Key(std::string key)
+    Builder::KeyItemContext Builder::Key(std::string key)
     {
         if (nodes_stack_.empty() || !nodes_stack_.back()->IsMap())
         {
@@ -191,8 +170,8 @@ namespace json
     {
         if (!nodes_stack_.empty())
         {
-            throw std::logic_error("Empty object or array/dict");
+            throw std::logic_error("Non-empty object or array/dict");
         }
         return root_;
-    }
+    }    
 }
