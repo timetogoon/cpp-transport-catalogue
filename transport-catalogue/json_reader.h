@@ -5,6 +5,7 @@
 #include "map_renderer.h"
 #include "json.h"
 #include "json_builder.h"
+#include "transport_router.h"
 
 namespace json_reader 
 {
@@ -12,9 +13,10 @@ namespace json_reader
 	{
 	public:
 		JsonReader() = delete;
-		JsonReader(transport_catalogue::Transport_catalogue& tc, 
-			request_h::RequestHandler& rq, 
+		JsonReader(transport_catalogue::Transport_catalogue& tc,
+			request_h::RequestHandler& rq,
 			renderer::MapRenderer& renderer,
+			transport_router::TransportRouter& troute,
 			std::istream& input = std::cin);
 
 		void BeginToMakeBase();
@@ -29,11 +31,15 @@ namespace json_reader
 
 		void PushRenderSettings(const json::Dict& settings);
 
+		void PushRouteSettings(const json::Dict& settings);
+
 	private:
 		transport_catalogue::Transport_catalogue& tc_;
 		request_h::RequestHandler& rq_;
 		renderer::MapRenderer& renderer_;
+		transport_router::TransportRouter& troute_;
 		json::Array base_reqs_, stat_reqs_;
 		json::Dict render_info_;
+		json::Dict route_settings_;
 	};
 }

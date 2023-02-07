@@ -2,6 +2,7 @@
 
 #include "transport_catalogue.h"
 #include "map_renderer.h"
+#include "transport_router.h"
 #include <optional>
 
 using namespace transport_catalogue;
@@ -13,22 +14,27 @@ namespace request_h
     public:
         RequestHandler() = delete;
 
-        RequestHandler(const transport_catalogue::Transport_catalogue& tc, const renderer::MapRenderer& renderer);
+        RequestHandler(const transport_catalogue::Transport_catalogue& tc, const renderer::MapRenderer& renderer, const transport_router::TransportRouter& troute);
 
-        // Возвращает информацию о маршруте (запрос Bus)
+        // Р’РѕР·РІСЂР°С‰Р°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РјР°СЂС€СЂСѓС‚Рµ (Р·Р°РїСЂРѕСЃ Bus)
         std::optional<domain::StopsForBusResponse> GetBusStat(const std::string_view& bus_name) const;
 
-        // Возвращает маршруты, проходящие через
+        // Р’РѕР·РІСЂР°С‰Р°РµС‚ РјР°СЂС€СЂСѓС‚С‹, РїСЂРѕС…РѕРґСЏС‰РёРµ С‡РµСЂРµР·
         const std::unordered_set<std::string_view> GetBusesByStop(const std::string_view& stop_name) const;
 
-        // Возвращает карту в виде документа
+        // Р’РѕР·РІСЂР°С‰Р°РµС‚ РєР°СЂС‚Сѓ РІ РІРёРґРµ РґРѕРєСѓРјРµРЅС‚Р°
         svg::Document RenderMap() const;
 
+        // "Р РёСЃСѓРµС‚" РєР°СЂС‚Сѓ
         void RenderMap(std::ostream& out);
 
+        // РџРѕРёСЃРє РјР°СЂС€СЂСѓС‚Р°
+        std::optional<domain::ReportRouter>BuildRoute(const std::string& from, const std::string& to) const;
+
     private:
-        // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
+        // RequestHandler РёСЃРїРѕР»СЊР·СѓРµС‚ Р°РіСЂРµРіР°С†РёСЋ РѕР±СЉРµРєС‚РѕРІ "РўСЂР°РЅСЃРїРѕСЂС‚РЅС‹Р№ РЎРїСЂР°РІРѕС‡РЅРёРє" Рё "Р’РёР·СѓР°Р»РёР·Р°С‚РѕСЂ РљР°СЂС‚С‹"
         const transport_catalogue::Transport_catalogue& tc_;
         const renderer::MapRenderer& renderer_;
+        const transport_router::TransportRouter& troute_;
     };
 }

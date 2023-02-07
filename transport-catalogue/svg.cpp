@@ -5,7 +5,7 @@ namespace svg {
     using namespace std;
     using namespace std::literals;
 
-    //Вывод цвета
+    //Р’С‹РІРѕРґ С†РІРµС‚Р°
 
     ostream& operator<<(ostream& out, Rgb rgb)
     {
@@ -25,7 +25,7 @@ namespace svg {
         return out;
     }
 
-    // Вывод LineCup и LineJoin
+    // Р’С‹РІРѕРґ LineCup Рё LineJoin
 
     ostream& operator<<(ostream& out, StrokeLineCap line_cup)
     {
@@ -64,7 +64,7 @@ namespace svg {
     void Object::Render(const RenderContext& context) const {
         context.RenderIndent();
 
-        // Делегируем вывод тега своим подклассам
+        // Р”РµР»РµРіРёСЂСѓРµРј РІС‹РІРѕРґ С‚РµРіР° СЃРІРѕРёРј РїРѕРґРєР»Р°СЃСЃР°Рј
         RenderObject(context);
 
         context.out << endl;

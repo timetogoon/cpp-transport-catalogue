@@ -7,18 +7,21 @@ using namespace std::string_literals;
 JsonReader::JsonReader(transport_catalogue::Transport_catalogue& tc,
 					   request_h::RequestHandler& rq,
 					   renderer::MapRenderer& renderer,
+		               transport_router::TransportRouter& troute,
 					   std::istream& input)
 		 : tc_(tc),
 		   rq_(rq),
-	       renderer_(renderer)
+	       renderer_(renderer),
+		   troute_(troute)
 {
 	auto allreq = json::Load(input).GetRoot().AsMap();
 	base_reqs_ = allreq.at("base_requests").AsArray();
 	render_info_ = allreq.at("render_settings").AsMap();
+	route_settings_ = allreq.at("routing_settings").AsMap();
 	stat_reqs_ = allreq.at("stat_requests").AsArray();
 }
 
-void JsonReader::WriteStopsToBase(const json::Array& arr) //запись остановок в базу
+void JsonReader::WriteStopsToBase(const json::Array& arr) //Р·Р°РїРёСЃСЊ РѕСЃС‚Р°РЅРѕРІРѕРє РІ Р±Р°Р·Сѓ
 {
 	for (auto& node : arr) 
 	{
@@ -27,6 +30,7 @@ void JsonReader::WriteStopsToBase(const json::Array& arr) //запись остановок в б
 				map.at("latitude"s).AsDouble(),
 				map.at("longitude"s).AsDouble());
 	}
+	
 	for (auto& node : arr) 
 	{
 		auto& map = node.AsMap();
@@ -36,9 +40,23 @@ void JsonReader::WriteStopsToBase(const json::Array& arr) //запись остановок в б
 				tc_.SetDistances(map.at("name"s).AsString(), name, distance.AsInt());
 		}
 	}
+	
+	auto distances = tc_.GetDistancesAll();
+	for (auto& distance : distances)
+	{
+		const auto& name_from = distance.first.first->name;
+		const auto& name_to = distance.first.second->name;
+
+		auto tmp = tc_.GetDistance(name_to, name_from);
+
+		if (tmp == 0)
+		{
+			tc_.SetDistances(name_to, name_from, distance.second);
+		}
+	}	
 }
 
-void JsonReader::WriteBusesToBase(const json::Array& arr) //запись маршрутов в базу
+void JsonReader::WriteBusesToBase(const json::Array& arr) //Р·Р°РїРёСЃСЊ РјР°СЂС€СЂСѓС‚РѕРІ РІ Р±Р°Р·Сѓ
 {
 	std::vector<const Stop*> bus_stops;
 	for (auto& node : arr) 
@@ -126,7 +144,15 @@ void JsonReader::PushRenderSettings(const json::Dict& settings)
 	renderer_.SetRenderSettings(rs);
 }
 
-void JsonReader::BeginToMakeBase() //распределние записей в базу
+void JsonReader::PushRouteSettings(const json::Dict& settings)
+{
+	transport_router::TransportRouter::RouteSettings routesettings;
+	routesettings.wait_time = settings.at("bus_wait_time"s).AsInt();
+	routesettings.velocity = settings.at("bus_velocity").AsDouble() * transport_router::KMH_TO_MMIN;
+	troute_.SetRouteSettings(routesettings);
+}
+
+void JsonReader::BeginToMakeBase() // СЂР°СЃРїСЂРµРґРµР»РЅРёРµ Р·Р°РїРёСЃРµР№ РІ Р±Р°Р·Сѓ
 {
 	json::Array onlystops, onlybuses;
 	for (auto& req : base_reqs_)
@@ -141,16 +167,18 @@ void JsonReader::BeginToMakeBase() //распределние записей в базу
 			onlybuses.push_back(req);
 		}
 	}
-	JsonReader::WriteStopsToBase(onlystops); //остановки
-	JsonReader::WriteBusesToBase(onlybuses); //маршруты
-	JsonReader::PushRenderSettings(render_info_); //настройки рендеринга
+	JsonReader::WriteStopsToBase(onlystops); // РѕСЃС‚Р°РЅРѕРІРєРё
+	JsonReader::WriteBusesToBase(onlybuses); // РјР°СЂС€СЂСѓС‚С‹
+	JsonReader::PushRenderSettings(render_info_); // РЅР°СЃС‚СЂРѕР№РєРё РїР°СЂР°РјРµС‚СЂРѕРІ СЂРµРЅРґРµСЂРёРЅРіР°
+	JsonReader::PushRouteSettings(route_settings_); // РЅР°СЃС‚СЂРѕР№РєР° РїР°СЂР°РјРµС‚СЂРѕРІ РјР°СЂС€СЂСѓС‚Р°
+	troute_.InitRouter(); // РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РіСЂР°С„Р°
 }
 
-json::Node JsonReader::Requests(const json::Dict& dict, const request_h::RequestHandler& rh) //обработка запросов к базе
+json::Node JsonReader::Requests(const json::Dict& dict, const request_h::RequestHandler& rh) // РѕР±СЂР°Р±РѕС‚РєР° Р·Р°РїСЂРѕСЃРѕРІ Рє Р±Р°Р·Рµ
 {	
 	json::Array temparr;
 	json::Builder builder;
-	if (dict.at("type"s) == "Stop"s)
+	if (dict.at("type"s) == "Stop"s) // Р·Р°РїСЂРѕСЃ - РЅР°Р№С‚Рё РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± РѕСЃС‚Р°РЅРѕРІРєРµ
 	{
 		if (tc_.FindStop(dict.at("name"s).AsString()).name.empty())
 		{			
@@ -197,7 +225,7 @@ json::Node JsonReader::Requests(const json::Dict& dict, const request_h::Request
 			return builder.Build();
 		}
 	}
-	else if (dict.at("type"s) == "Bus"s)
+	else if (dict.at("type"s) == "Bus"s) // Р·Р°РїСЂРѕСЃ - РЅР°Р№С‚Рё РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РјР°СЂС€СЂСѓС‚Рµ
 	{
 		auto result = rh.GetBusStat(dict.at("name"s).AsString());
 		if (result.has_value())
@@ -221,7 +249,7 @@ json::Node JsonReader::Requests(const json::Dict& dict, const request_h::Request
 			return builder.Build();
 		}
 	}
-	else if (dict.at("type"s) == "Map"s)
+	else if (dict.at("type"s) == "Map"s) // Р·Р°РїСЂРѕСЃ - РЅР°СЂРёСЃРѕРІР°С‚СЊ РєР°СЂС‚Сѓ
 	{
 		std::ostringstream out;
 		rh.RenderMap()
@@ -232,13 +260,48 @@ json::Node JsonReader::Requests(const json::Dict& dict, const request_h::Request
 			.EndDict();
 			return builder.Build();
 	}
+	else if (dict.at("type"s) == "Route"s) // Р·Р°РїСЂРѕСЃ - РЅР°Р№С‚Рё РјР°СЂС€СЂСѓС‚
+	{		
+		auto result = rh.BuildRoute(dict.at("from"s).AsString(), dict.at("to"s).AsString());		
+		if (!result.has_value())
+		{
+			return json::Builder{}.StartDict()
+				.Key("request_id"s).Value(dict.at("id"s).AsInt())
+				.Key("error_message"s).Value("not found"s)
+				.EndDict().Build().AsMap();
+		}
+
+		json::Array items; // СЃРєР»Р°РґРёСЂСѓРµРј РІСЃС‘ РІ РјР°СЃСЃРёРІ РґР»СЏ РґР°Р»СЊРЅРµР№С€РµРіРѕ РІС‹РІРѕРґР°
+		for (const auto& res : result.value().information) 
+		{			
+			json::Dict wait_elem = json::Builder{}.StartDict()
+				.Key("type"s).Value("Wait"s)
+				.Key("stop_name"s).Value(std::string(res.wait.stop_name))
+				.Key("time"s).Value(res.wait.minutes)
+				.EndDict().Build().AsMap();
+			json::Dict ride_elem = json::Builder{}.StartDict()
+				.Key("type"s).Value("Bus"s)
+				.Key("bus"s).Value(std::string(res.bus.name))
+				.Key("span_count"s).Value(static_cast<int>(res.bus.span_count))
+				.Key("time"s).Value(res.bus.minutes - res.wait.minutes)
+				.EndDict().Build().AsMap();
+			items.push_back(wait_elem);
+			items.push_back(ride_elem);
+		}
+		 builder.StartDict()
+			.Key("request_id"s).Value(dict.at("id"s).AsInt())
+			.Key("total_time"s).Value(result.value().total_minutes)
+			.Key("items"s).Value(items)
+			.EndDict();
+		return builder.Build().AsMap();
+	}
 	else
 	{
 		throw std::logic_error("Invalid request"s);
 	};
 }
 
-void JsonReader::ResponsesToRequests(std::ostream& out) //ответ на запросы к базе
+void JsonReader::ResponsesToRequests(std::ostream& out) // РѕС‚РІРµС‚С‹ РЅР° Р·Р°РїСЂРѕСЃС‹ Рє Р±Р°Р·Рµ
 {
 	json::Array answer;
 	for (const auto& inquiries : stat_reqs_) 

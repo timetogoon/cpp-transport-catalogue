@@ -32,7 +32,7 @@ namespace transport_catalogue
     {
         if (stopname_to_stop_.count(name) == 0)
         {
-            throw invalid_argument("stop does not exists!");
+            throw invalid_argument("Stop does not exists!");
         }
         else
         {
@@ -102,7 +102,7 @@ namespace transport_catalogue
             {                
                 length += geo::ComputeDistance(busname_to_bus_.at(bus)->buses_stops[i]->coord,
                     busname_to_bus_.at(bus)->buses_stops[i + 1]->coord);
-                if (distances_.count({ busname_to_bus_.at(bus)->buses_stops[i], //åñëè åñòü *A,*B
+                if (distances_.count({ busname_to_bus_.at(bus)->buses_stops[i], //ÐµÑÐ»Ð¸ ÐµÑÑ‚ÑŒ *A,*B
                     busname_to_bus_.at(bus)->buses_stops[i + 1] }) > 0) 
                 {
                     dist += distances_.at({ busname_to_bus_.at(bus)->buses_stops[i],
@@ -110,17 +110,17 @@ namespace transport_catalogue
                 }
                 else
                 {
-                    dist += distances_.at({ busname_to_bus_.at(bus)->buses_stops[i + 1], //åñëè íåò *A,*B, òî èñêàòü *B,*A
+                    dist += distances_.at({ busname_to_bus_.at(bus)->buses_stops[i + 1], //ÐµÑÐ»Ð¸ Ð½ÐµÑ‚ *A,*B, Ñ‚Ð¾ Ð¸ÑÐºÐ°Ñ‚ÑŒ *B,*A
                                         busname_to_bus_.at(bus)->buses_stops[i] });
                 }                
             }
-            if (!busname_to_bus_.at(bus)->ring) //åñëè ìàðøðóò íå êîëüöåâîé
+            if (!busname_to_bus_.at(bus)->ring) //ÐµÑÐ»Ð¸ Ð¼Ð°Ñ€ÑˆÑ€ÑƒÑ‚ Ð½Ðµ ÐºÐ¾Ð»ÑŒÑ†ÐµÐ²Ð¾Ð¹
             {
-                length *= 2; //óâåëè÷èòü ãåîãðàôè÷åñêóþ äëèíó íà 2
+                length *= 2; //ÑƒÐ²ÐµÐ»Ð¸Ñ‡Ð¸Ñ‚ÑŒ Ð³ÐµÐ¾Ð³Ñ€Ð°Ñ„Ð¸Ñ‡ÐµÑÐºÑƒÑŽ Ð´Ð»Ð¸Ð½Ñƒ Ð½Ð° 2
                 stopsquantity = busname_to_bus_.at(bus)->buses_stops.size() * 2 - 1;
                 for (size_t i = 0; i < busname_to_bus_.at(bus)->buses_stops.size() - 1; i++)
                 {
-                    if (distances_.count({ busname_to_bus_.at(bus)->buses_stops[i + 1], //åñëè åñòü *A,*B
+                    if (distances_.count({ busname_to_bus_.at(bus)->buses_stops[i + 1], //ÐµÑÐ»Ð¸ ÐµÑÑ‚ÑŒ *A,*B
                         busname_to_bus_.at(bus)->buses_stops[i] }) > 0)
                     {
                         dist += distances_.at({ busname_to_bus_.at(bus)->buses_stops[i + 1],
@@ -128,7 +128,7 @@ namespace transport_catalogue
                     }
                     else
                     {
-                        dist += distances_.at({ busname_to_bus_.at(bus)->buses_stops[i], //åñëè íåò *A,*B, òî èñêàòü *B,*A
+                        dist += distances_.at({ busname_to_bus_.at(bus)->buses_stops[i], //ÐµÑÐ»Ð¸ Ð½ÐµÑ‚ *A,*B, Ñ‚Ð¾ Ð¸ÑÐºÐ°Ñ‚ÑŒ *B,*A
                                             busname_to_bus_.at(bus)->buses_stops[i + 1] });
                     }
                 }
@@ -151,6 +151,21 @@ namespace transport_catalogue
         return buses_;
     }
 
+    const std::deque<Stop> Transport_catalogue::GetStops() const
+    {
+        return stops_;
+    }
+
+    const std::unordered_map<std::string_view, Stop*>Transport_catalogue::GetStopsPtr() const
+    {
+        return stopname_to_stop_;
+    }
+
+    const std::unordered_map<std::string_view, Bus*>Transport_catalogue::GetBusesPtr() const
+    {
+        return busname_to_bus_;
+    }
+
     void Transport_catalogue::SetDistances(string_view stop1_name, string_view stop2_name, const size_t dist) 
     {
         auto ptr1 = GetStopptr(string(stop1_name));
@@ -164,11 +179,17 @@ namespace transport_catalogue
         auto ptr2 = GetStopptr(string(stop2_name));
         if (distances_.count({ const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2) }) > 0)
         {
+
             return distances_.at({ const_cast<Stop*>(ptr1), const_cast<Stop*>(ptr2) });
         }
         else
         {
             return 0;
         }
+    }  
+
+    unordered_map<pair<Stop*, Stop*>, size_t, domain::detail::DistHasher>Transport_catalogue::GetDistancesAll() const
+    {
+        return distances_;
     }
 }

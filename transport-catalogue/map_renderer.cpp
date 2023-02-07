@@ -7,62 +7,62 @@ bool IsZero(double value) {
     return std::abs(value) < EPSILON;
 }
 
-//----------------Преобразование координат в экранные--------------------------
+//----------------РџСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ РєРѕРѕСЂРґРёРЅР°С‚ РІ СЌРєСЂР°РЅРЅС‹Рµ--------------------------
 class SphereProjector {
 public:
-    // points_begin и points_end задают начало и конец интервала элементов geo::Coordinates
+    // points_begin Рё points_end Р·Р°РґР°СЋС‚ РЅР°С‡Р°Р»Рѕ Рё РєРѕРЅРµС† РёРЅС‚РµСЂРІР°Р»Р° СЌР»РµРјРµРЅС‚РѕРІ geo::Coordinates
     template <typename PointInputIt>
     SphereProjector(PointInputIt points_begin, PointInputIt points_end,
         double max_width, double max_height, double padding)
         : padding_(padding) //
     {
-        // Если точки поверхности сферы не заданы, вычислять нечего
+        // Р•СЃР»Рё С‚РѕС‡РєРё РїРѕРІРµСЂС…РЅРѕСЃС‚Рё СЃС„РµСЂС‹ РЅРµ Р·Р°РґР°РЅС‹, РІС‹С‡РёСЃР»СЏС‚СЊ РЅРµС‡РµРіРѕ
         if (points_begin == points_end) {
             return;
         }
 
-        // Находим точки с минимальной и максимальной долготой
+        // РќР°С…РѕРґРёРј С‚РѕС‡РєРё СЃ РјРёРЅРёРјР°Р»СЊРЅРѕР№ Рё РјР°РєСЃРёРјР°Р»СЊРЅРѕР№ РґРѕР»РіРѕС‚РѕР№
         const auto [left_it, right_it] = std::minmax_element(
             points_begin, points_end,
             [](auto lhs, auto rhs) { return lhs.lng < rhs.lng; });
         min_lon_ = left_it->lng;
         const double max_lon = right_it->lng;
 
-        // Находим точки с минимальной и максимальной широтой
+        // РќР°С…РѕРґРёРј С‚РѕС‡РєРё СЃ РјРёРЅРёРјР°Р»СЊРЅРѕР№ Рё РјР°РєСЃРёРјР°Р»СЊРЅРѕР№ С€РёСЂРѕС‚РѕР№
         const auto [bottom_it, top_it] = std::minmax_element(
             points_begin, points_end,
             [](auto lhs, auto rhs) { return lhs.lat < rhs.lat; });
         const double min_lat = bottom_it->lat;
         max_lat_ = top_it->lat;
 
-        // Вычисляем коэффициент масштабирования вдоль координаты x
+        // Р’С‹С‡РёСЃР»СЏРµРј РєРѕСЌС„С„РёС†РёРµРЅС‚ РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ РІРґРѕР»СЊ РєРѕРѕСЂРґРёРЅР°С‚С‹ x
         std::optional<double> width_zoom;
         if (!IsZero(max_lon - min_lon_)) {
             width_zoom = (max_width - 2 * padding) / (max_lon - min_lon_);
         }
 
-        // Вычисляем коэффициент масштабирования вдоль координаты y
+        // Р’С‹С‡РёСЃР»СЏРµРј РєРѕСЌС„С„РёС†РёРµРЅС‚ РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ РІРґРѕР»СЊ РєРѕРѕСЂРґРёРЅР°С‚С‹ y
         std::optional<double> height_zoom;
         if (!IsZero(max_lat_ - min_lat)) {
             height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat);
         }
 
         if (width_zoom && height_zoom) {
-            // Коэффициенты масштабирования по ширине и высоте ненулевые,
-            // берём минимальный из них
+            // РљРѕСЌС„С„РёС†РёРµРЅС‚С‹ РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ РїРѕ С€РёСЂРёРЅРµ Рё РІС‹СЃРѕС‚Рµ РЅРµРЅСѓР»РµРІС‹Рµ,
+            // Р±РµСЂС‘Рј РјРёРЅРёРјР°Р»СЊРЅС‹Р№ РёР· РЅРёС…
             zoom_coeff_ = std::min(*width_zoom, *height_zoom);
         }
         else if (width_zoom) {
-            // Коэффициент масштабирования по ширине ненулевой, используем его
+            // РљРѕСЌС„С„РёС†РёРµРЅС‚ РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ РїРѕ С€РёСЂРёРЅРµ РЅРµРЅСѓР»РµРІРѕР№, РёСЃРїРѕР»СЊР·СѓРµРј РµРіРѕ
             zoom_coeff_ = *width_zoom;
         }
         else if (height_zoom) {
-            // Коэффициент масштабирования по высоте ненулевой, используем его
+            // РљРѕСЌС„С„РёС†РёРµРЅС‚ РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ РїРѕ РІС‹СЃРѕС‚Рµ РЅРµРЅСѓР»РµРІРѕР№, РёСЃРїРѕР»СЊР·СѓРµРј РµРіРѕ
             zoom_coeff_ = *height_zoom;
         }
     }
 
-    // Проецирует широту и долготу в координаты внутри SVG-изображения
+    // РџСЂРѕРµС†РёСЂСѓРµС‚ С€РёСЂРѕС‚Сѓ Рё РґРѕР»РіРѕС‚Сѓ РІ РєРѕРѕСЂРґРёРЅР°С‚С‹ РІРЅСѓС‚СЂРё SVG-РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
     svg::Point operator()(geo::Coordinates coords) const {
         return {
             (coords.lng - min_lon_) * zoom_coeff_ + padding_,
@@ -77,7 +77,7 @@ private:
     double zoom_coeff_ = 0;
 };
 
-//----------------Конструктор класса рисования--------------------------
+//----------------РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РєР»Р°СЃСЃР° СЂРёСЃРѕРІР°РЅРёСЏ--------------------------
 MapDraw::MapDraw(const RenderSettings& settings, const std::deque<domain::Bus>& buses)
     : settings_(settings),
     buses_(buses)
@@ -108,7 +108,7 @@ MapDraw::MapDraw(const RenderSettings& settings, const std::deque<domain::Bus>& 
     }
 }
 
-//----------------Рисуем линии маршрутов--------------------------
+//----------------Р РёСЃСѓРµРј Р»РёРЅРёРё РјР°СЂС€СЂСѓС‚РѕРІ--------------------------
 void MapDraw::DrawLines(svg::ObjectContainer& container) const
 {
     auto sortbuses = buses_;
@@ -143,7 +143,7 @@ void MapDraw::DrawLines(svg::ObjectContainer& container) const
     }
 }
 
-//----------------Рисуем имена маршрутов--------------------------
+//----------------Р РёСЃСѓРµРј РёРјРµРЅР° РјР°СЂС€СЂСѓС‚РѕРІ--------------------------
 void MapDraw::DrawRouteNames(svg::ObjectContainer& container) const 
 {
     auto sortbuses = buses_;
@@ -192,7 +192,7 @@ void MapDraw::DrawRouteNames(svg::ObjectContainer& container) const
     }
 }
 
-//----------------Рисуем остановки маршрутов--------------------------
+//----------------Р РёСЃСѓРµРј РѕСЃС‚Р°РЅРѕРІРєРё РјР°СЂС€СЂСѓС‚РѕРІ--------------------------
 void MapDraw::DrawCirclesStops(svg::ObjectContainer& container) const
 {
     for (auto const& [name, coords] : stop_earth_coord_)
@@ -204,7 +204,7 @@ void MapDraw::DrawCirclesStops(svg::ObjectContainer& container) const
     }
 }
 
-//----------------Рисуем имена остановок маршрутов--------------------------
+//----------------Р РёСЃСѓРµРј РёРјРµРЅР° РѕСЃС‚Р°РЅРѕРІРѕРє РјР°СЂС€СЂСѓС‚РѕРІ--------------------------
 void MapDraw::DrawStopsNames(svg::ObjectContainer& container) const
 {
     for (auto const& [name, coords] : stop_earth_coord_)
@@ -227,7 +227,7 @@ void MapDraw::DrawStopsNames(svg::ObjectContainer& container) const
     }
 }
 
-//----------------Рисуем--------------------------
+//----------------Р РёСЃСѓРµРј--------------------------
 void MapDraw::Draw(svg::ObjectContainer& container) const
 {
     DrawLines(container);
@@ -236,13 +236,13 @@ void MapDraw::Draw(svg::ObjectContainer& container) const
     DrawStopsNames(container);
 }
 
-//----------------Установка настроек рисования--------------------------
+//----------------РЈСЃС‚Р°РЅРѕРІРєР° РЅР°СЃС‚СЂРѕРµРє СЂРёСЃРѕРІР°РЅРёСЏ--------------------------
 void MapRenderer::SetRenderSettings(const RenderSettings& settings)
 {
     settings_ = settings;
 }
 
-//----------------Вызываем класс рисования--------------------------
+//----------------Р’С‹Р·С‹РІР°РµРј РєР»Р°СЃСЃ СЂРёСЃРѕРІР°РЅРёСЏ--------------------------
 MapDraw MapRenderer::GetPictures(const std::deque<domain::Bus>& buses) const
 {
     return { settings_, buses };

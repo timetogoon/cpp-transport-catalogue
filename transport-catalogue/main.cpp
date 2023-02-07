@@ -1,14 +1,15 @@
-﻿#include "transport_catalogue.h"
+
+#include "transport_catalogue.h"
 #include "json_reader.h"
+#include "transport_router.h"
 
 int main() 
 {
-    //std::ofstream out("test.txt");
     transport_catalogue::Transport_catalogue tr; 
     renderer::MapRenderer rend;
-    request_h::RequestHandler reqhan(tr, rend);
-    json_reader::JsonReader js(tr, reqhan, rend, std::cin);
+    transport_router::TransportRouter router(tr);
+    request_h::RequestHandler reqhan(tr, rend, router);
+    json_reader::JsonReader js(tr, reqhan, rend, router, std::cin);
     js.BeginToMakeBase();
-    //reqhan.RenderMap();
     js.ResponsesToRequests(std::cout);
 }

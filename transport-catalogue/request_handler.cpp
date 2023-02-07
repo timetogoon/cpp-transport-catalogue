@@ -3,10 +3,12 @@
 using namespace request_h;
 using namespace transport_catalogue;
 using namespace renderer;
+using namespace transport_router;
 
-RequestHandler::RequestHandler(const Transport_catalogue& tc, const renderer::MapRenderer& renderer)
+RequestHandler::RequestHandler(const Transport_catalogue& tc, const MapRenderer& renderer, const TransportRouter& troute)
 	: tc_(tc),
-	renderer_(renderer)
+	renderer_(renderer),
+	troute_(troute)
 {
 }
 
@@ -50,4 +52,37 @@ void RequestHandler::RenderMap(std::ostream& out)
 	auto const buses = tc_.GetBuses();
 	renderer_.GetPictures(buses).Draw(doc);
 	doc.Render(out);
+}
+
+std::optional<domain::ReportRouter>RequestHandler::BuildRoute(const std::string& from, const std::string& to) const
+{
+	domain::ReportRouter report;
+
+	// если начальная и конечная остановка одинаковые - возвращаем пустой результат
+	if (from == to)
+	{
+		return report;
+	}
+
+	domain::Info info; 
+
+	auto edges = troute_.TransportRouter::BuildRoute(from, to);
+	if (!edges.has_value())
+	{
+		return {};
+	}
+
+	int wait_time = troute_.GetRouteSettings().wait_time;
+	
+	for (const auto& edge : edges.value())
+	{
+		report.total_minutes += edge.total_time;
+		info.wait.stop_name = edge.stop_from;
+		info.wait.minutes = wait_time;
+		info.bus.name = edge.bus_name;
+		info.bus.span_count = edge.span_count;
+		info.bus.minutes = edge.total_time;
+		report.information.push_back(info);
+	}
+	return report;
 }
