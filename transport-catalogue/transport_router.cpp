@@ -99,6 +99,36 @@ namespace transport_router
 		router_ = std::make_unique<graph::Router<RouteWeight>>(graph_);
 	}
 
+	const graph::DirectedWeightedGraph<RouteWeight>& TransportRouter::GetGraph() const
+	{
+		return graph_;
+	}
+
+	void TransportRouter::SetGraph(const graph::DirectedWeightedGraph<RouteWeight>&& graph)
+	{
+		graph_ = graph;
+	}
+
+	const std::unique_ptr<graph::Router<RouteWeight>>& TransportRouter::GetRouter() const
+	{
+		return router_;
+	}
+
+	void TransportRouter::SetRouter(std::unique_ptr<graph::Router<RouteWeight>>&& router)
+	{
+		std::swap(router_,router);
+	}
+
+	const std::unordered_map<size_t, const domain::Stop*>& TransportRouter::GetVertexIdToStopname() const
+	{
+		return stopname_by_id_;
+	}
+
+	const std::unordered_map<std::string_view, size_t>& TransportRouter::GetStopnameToVertexId() const
+	{
+		return id_by_stopname_;
+	}
+
 	graph::Edge<RouteWeight>TransportRouter::MakeEdge(string_view route_name, const domain::Bus* route,
 													  size_t stop_from_index, size_t stop_to_index) 
 	{													// записываем инфу о ребре (имя маршрута, кол-во пересадок),
@@ -118,6 +148,16 @@ namespace transport_router
 			tc_.GetDistance(route->buses_stops.at(stop_from_index)->name,
 				route->buses_stops.at(stop_to_index)->name);
 		return split_distance / settings_.velocity;
+	}
+
+	void TransportRouter::SetStopnameToVertexId(std::unordered_map<std::string_view, size_t>&& id_by_stopname)
+	{
+		id_by_stopname_ = id_by_stopname;
+	}
+
+	void TransportRouter::SetVertexIdToStopname(std::unordered_map<size_t, const domain::Stop*>&& stopname_by_id)
+	{
+		stopname_by_id_ = stopname_by_id;
 	}
 
 	//-------------Операторы для работы в графе с типом RouteWeight, а то ругается---------------

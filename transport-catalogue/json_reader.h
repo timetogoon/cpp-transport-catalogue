@@ -13,13 +13,13 @@ namespace json_reader
 	{
 	public:
 		JsonReader() = delete;
-		JsonReader(transport_catalogue::Transport_catalogue& tc,
+		JsonReader(serialization::Serialization& serializator,
+			transport_catalogue::Transport_catalogue& tc,
 			request_h::RequestHandler& rq,
 			renderer::MapRenderer& renderer,
-			transport_router::TransportRouter& troute,
-			std::istream& input = std::cin);
+			transport_router::TransportRouter& troute);
 
-		void BeginToMakeBase();
+		void BeginToMakeBase(std::istream& input = std::cin);
 
 		void WriteStopsToBase(const json::Array& arr);
 
@@ -33,13 +33,19 @@ namespace json_reader
 
 		void PushRouteSettings(const json::Dict& settings);
 
+		void PushSerializationSettings(const json::Dict& serialization_settings_);
+
+		void ReadRequests(std::istream& in);
+
 	private:
+		serialization::Serialization& serializator_;
 		transport_catalogue::Transport_catalogue& tc_;
 		request_h::RequestHandler& rq_;
 		renderer::MapRenderer& renderer_;
 		transport_router::TransportRouter& troute_;
 		json::Array base_reqs_, stat_reqs_;
-		json::Dict render_info_;
-		json::Dict route_settings_;
+		std::optional<json::Dict>render_info_;
+		std::optional<json::Dict>route_settings_;
+		std::optional<json::Dict>serialization_settings_;
 	};
 }

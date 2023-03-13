@@ -54,6 +54,18 @@ namespace transport_router
 
 		void InitRouter();
 
+		const graph::DirectedWeightedGraph<RouteWeight>& GetGraph() const;
+		void SetGraph(const graph::DirectedWeightedGraph<RouteWeight>&& graph);
+
+		const std::unique_ptr<graph::Router<RouteWeight>>& GetRouter() const;
+		void SetRouter(std::unique_ptr<graph::Router<RouteWeight>>&& router);
+
+		const std::unordered_map<std::string_view, size_t>& GetStopnameToVertexId() const;
+		void SetStopnameToVertexId(std::unordered_map<std::string_view, size_t>&& id_by_stopname);
+
+		const std::unordered_map<size_t, const domain::Stop*>& GetVertexIdToStopname() const;
+		void SetVertexIdToStopname(std::unordered_map<size_t, const domain::Stop*>&& stopname_by_id);
+
 	private:
 		const transport_catalogue::Transport_catalogue& tc_;
 		RouteSettings settings_;
@@ -61,8 +73,8 @@ namespace transport_router
 		std::unordered_map<size_t, const domain::Stop*> stopname_by_id_; // нумеруем остановки для графа
 		std::unordered_map<std::string_view, size_t> id_by_stopname_; // связываем название остановки с ее номером для поиска по маршруту	
 
-		graph::DirectedWeightedGraph<RouteWeight> graph_;
-		std::unique_ptr<graph::Router<RouteWeight>> router_;
+		graph::DirectedWeightedGraph<RouteWeight> graph_ = {};
+		std::unique_ptr<graph::Router<RouteWeight>> router_ = nullptr;
 
 		graph::Edge<RouteWeight>MakeEdge(std::string_view route_name, const domain::Bus* route, size_t stop_from_index, size_t stop_to_index);
 

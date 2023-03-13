@@ -4,21 +4,17 @@
 using namespace json_reader;
 using namespace std::string_literals;
 
-JsonReader::JsonReader(transport_catalogue::Transport_catalogue& tc,
+JsonReader::JsonReader(serialization::Serialization& serializator,
+					   transport_catalogue::Transport_catalogue& tc,
 					   request_h::RequestHandler& rq,
 					   renderer::MapRenderer& renderer,
-		               transport_router::TransportRouter& troute,
-					   std::istream& input)
-		 : tc_(tc),
+		               transport_router::TransportRouter& troute)
+		 : serializator_(serializator),
+		   tc_(tc),
 		   rq_(rq),
 	       renderer_(renderer),
 		   troute_(troute)
-{
-	auto allreq = json::Load(input).GetRoot().AsMap();
-	base_reqs_ = allreq.at("base_requests").AsArray();
-	render_info_ = allreq.at("render_settings").AsMap();
-	route_settings_ = allreq.at("routing_settings").AsMap();
-	stat_reqs_ = allreq.at("stat_requests").AsArray();
+{	
 }
 
 void JsonReader::WriteStopsToBase(const json::Array& arr) //запись остановок в базу
@@ -152,8 +148,31 @@ void JsonReader::PushRouteSettings(const json::Dict& settings)
 	troute_.SetRouteSettings(routesettings);
 }
 
-void JsonReader::BeginToMakeBase() // распределние записей в базу
+void JsonReader::PushSerializationSettings(const json::Dict& serialization_settings_)
+{	
+	serializator_.SetSetting(serialization_settings_.at("file"s).AsString());
+}
+
+void JsonReader::BeginToMakeBase(std::istream& input) // распределние записей в базу
 {
+	auto allreq = json::Load(input).GetRoot().AsMap();
+	base_reqs_ = allreq.at("base_requests"s).AsArray();
+
+	if (allreq.contains("render_settings"s))
+	{
+		render_info_ = allreq.at("render_settings"s).AsMap();
+	}	
+
+	if (allreq.contains("routing_settings"s))
+	{
+		route_settings_ = allreq.at("routing_settings"s).AsMap();
+	}
+	
+	if (allreq.contains("serialization_settings"s))
+	{
+		serialization_settings_ = allreq.at("serialization_settings"s).AsMap();
+	}	
+
 	json::Array onlystops, onlybuses;
 	for (auto& req : base_reqs_)
 	{
@@ -169,9 +188,24 @@ void JsonReader::BeginToMakeBase() // распределние записей в
 	}
 	JsonReader::WriteStopsToBase(onlystops); // остановки
 	JsonReader::WriteBusesToBase(onlybuses); // маршруты
-	JsonReader::PushRenderSettings(render_info_); // настройки параметров рендеринга
-	JsonReader::PushRouteSettings(route_settings_); // настройка параметров маршрута
+
+	if (render_info_.has_value())
+	{
+		JsonReader::PushRenderSettings(render_info_.value()); // настройки параметров рендеринга
+	}
+	
+	if (route_settings_.has_value())
+	{
+		JsonReader::PushRouteSettings(route_settings_.value()); // настройка параметров маршрута
+	}
+
+	if (serialization_settings_.has_value())
+	{
+		JsonReader::PushSerializationSettings(serialization_settings_.value()); // настройка параметров сериализации
+	}	
+	
 	troute_.InitRouter(); // инициализация графа
+	serializator_.CreateBase();
 }
 
 json::Node JsonReader::Requests(const json::Dict& dict, const request_h::RequestHandler& rh) // обработка запросов к базе
@@ -310,4 +344,17 @@ void JsonReader::ResponsesToRequests(std::ostream& out) // ответы на з�
 	}
 	const json::Document report(answer);
 	json::Print(report, out);
+}
+
+void JsonReader::ReadRequests(std::istream& in = std::cin)
+{
+	const auto load = json::Load(in).GetRoot().AsMap();
+	stat_reqs_ = load.at("stat_requests").AsArray();
+	serialization_settings_ = load.at("serialization_settings"s).AsMap();
+	
+	JsonReader::PushSerializationSettings(serialization_settings_.value()); // настройка параметров сериализации
+		
+	serializator_.AccessBase();
+	
+	troute_.InitRouter();
 }

@@ -5,8 +5,12 @@ using namespace transport_catalogue;
 using namespace renderer;
 using namespace transport_router;
 
-RequestHandler::RequestHandler(const Transport_catalogue& tc, const MapRenderer& renderer, const TransportRouter& troute)
-	: tc_(tc),
+RequestHandler::RequestHandler(const serialization::Serialization& serializator, 
+						       const Transport_catalogue& tc, 
+							   const MapRenderer& renderer, 
+							   const TransportRouter& troute)
+	: serializator_(serializator),
+	tc_(tc),
 	renderer_(renderer),
 	troute_(troute)
 {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graph.h"
+#include "transport_router.pb.h"
 
 #include <algorithm>
 #include <cassert>
@@ -20,22 +21,26 @@ private:
     using Graph = DirectedWeightedGraph<Weight>;
 
 public:
-    explicit Router(const Graph& graph);
-
-    struct RouteInfo {
-        Weight weight;
-        std::vector<EdgeId> edges;
-    };
-
-    std::optional<RouteInfo> BuildRoute(VertexId from, VertexId to) const;
-
-private:
     struct RouteInternalData {
         Weight weight;
         std::optional<EdgeId> prev_edge;
     };
     using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
 
+    explicit Router(const Graph& graph);    
+
+    Router(const transport_router_proto::RouterDataBase& db, const Graph& graph);
+
+    struct RouteInfo {
+        Weight weight;
+        std::vector<EdgeId> edges;
+    };
+
+    std::optional<RouteInfo>BuildRoute(VertexId from, VertexId to) const;
+
+    const std::vector<std::vector<std::optional<RouteInternalData>>>& GetRoutesInternalData() const;
+
+private:
     void InitializeRoutesInternalData(const Graph& graph) {
         const size_t vertex_count = graph.GetVertexCount();
         for (VertexId vertex = 0; vertex < vertex_count; ++vertex) {
@@ -95,6 +100,36 @@ Router<Weight>::Router(const Graph& graph)
 }
 
 template <typename Weight>
+Router<Weight>::Router(const transport_router_proto::RouterDataBase& db, const Graph& graph)
+    :graph_(graph)
+{
+    std::vector<std::optional<RouteInternalData>> temp_data_vector;
+    for (auto& data_vector : db.routes_internal_data())
+    {
+        for (auto& data : data_vector.data())
+        {
+            RouteInternalData temp_data;
+            if (data.optional_data_case() == 1)
+            {
+                temp_data_vector.push_back({});
+            }
+            else
+            {
+                temp_data.weight.bus_name = data.data().rid_weight().bus_name();
+                temp_data.weight.span_count = data.data().rid_weight().span_count();
+                temp_data.weight.total_time = data.data().rid_weight().total_time();
+                if (data.data().prev_edge_case() == 3)
+                {
+                    temp_data.prev_edge = data.data().edgeid();
+                }
+                temp_data_vector.push_back(temp_data);
+            }
+        }
+        routes_internal_data_.push_back(std::move(temp_data_vector));
+    }
+}
+
+template <typename Weight>
 std::optional<typename Router<Weight>::RouteInfo> Router<Weight>::BuildRoute(VertexId from,
                                                                              VertexId to) const {
     const auto& route_internal_data = routes_internal_data_.at(from).at(to);
@@ -114,4 +149,9 @@ std::optional<typename Router<Weight>::RouteInfo> Router<Weight>::BuildRoute(Ver
     return RouteInfo{weight, std::move(edges)};
 }
 
+template <typename Weight>const typename Router<Weight>::RoutesInternalData&
+Router<Weight>::GetRoutesInternalData() const 
+{
+    return routes_internal_data_;
+}
 }  // namespace graph

@@ -3,6 +3,7 @@
 #include "transport_catalogue.h"
 #include "map_renderer.h"
 #include "transport_router.h"
+#include "serialization.h"
 #include <optional>
 
 using namespace transport_catalogue;
@@ -14,7 +15,10 @@ namespace request_h
     public:
         RequestHandler() = delete;
 
-        RequestHandler(const transport_catalogue::Transport_catalogue& tc, const renderer::MapRenderer& renderer, const transport_router::TransportRouter& troute);
+        RequestHandler(const serialization::Serialization& serializator,
+                       const transport_catalogue::Transport_catalogue& tc,
+                       const renderer::MapRenderer& renderer,
+                       const transport_router::TransportRouter& troute);
 
         // Возвращает информацию о маршруте (запрос Bus)
         std::optional<domain::StopsForBusResponse> GetBusStat(const std::string_view& bus_name) const;
@@ -27,12 +31,13 @@ namespace request_h
 
         // "Рисует" карту
         void RenderMap(std::ostream& out);
-
+        
         // Поиск маршрута
         std::optional<domain::ReportRouter>BuildRoute(const std::string& from, const std::string& to) const;
 
     private:
-        // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
+        // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты" и не только...
+        const serialization::Serialization& serializator_;
         const transport_catalogue::Transport_catalogue& tc_;
         const renderer::MapRenderer& renderer_;
         const transport_router::TransportRouter& troute_;

@@ -62,6 +62,8 @@ namespace renderer {
 
         MapDraw GetPictures(const std::deque<domain::Bus>& buses) const;
 
+        const RenderSettings& GetRenderSettings() const;
+
     private:
         RenderSettings settings_;
     };

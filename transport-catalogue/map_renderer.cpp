@@ -242,6 +242,11 @@ void MapRenderer::SetRenderSettings(const RenderSettings& settings)
     settings_ = settings;
 }
 
+const RenderSettings& MapRenderer::GetRenderSettings() const
+{
+    return settings_;
+}
+
 //----------------Вызываем класс рисования--------------------------
 MapDraw MapRenderer::GetPictures(const std::deque<domain::Bus>& buses) const
 {

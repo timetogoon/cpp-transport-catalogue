@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "map_renderer.proto";
+import "transport_router.proto";
+package transport_catalogue_proto;
+
+message Coordinates 
+{
+    double lat = 1;
+    double lng = 2;
+}
+
+message Stop
+{
+    bytes name = 1;
+    Coordinates coords = 2;
+}
+
+message Bus
+{
+    bytes name = 1;
+    repeated bytes stop_names = 2;
+    bool is_ring = 3;
+}
+
+message Distance
+{
+    bytes stop_name_from = 1;
+    bytes stop_name_to = 2;
+    int32 distance = 3;
+}
+
+message TransportCatalogue 
+{
+    repeated Bus buses = 1;
+    repeated Stop stops = 2;
+    repeated Distance stops_distances = 3;
+    proto_renderer.RenderSettings render_settings = 4;
+    transport_router_proto.RouterSettings router_settings = 5;
+    transport_router_proto.RouterDataBase routerdb = 6;
+    transport_router_proto.TransportRouter database = 7;
+}

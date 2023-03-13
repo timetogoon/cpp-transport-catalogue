@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package graph_proto;
+
+message RouteWeight
+{
+	bytes bus_name = 1;
+        double total_time = 2;
+	int32 span_count = 3;
+}
+
+message Edge
+{
+	uint32 from = 1;
+	uint32 to = 2;
+	RouteWeight weight = 3;
+}
+
+message IncidenceList
+{
+	repeated uint32 edge_id = 1;
+}
+
+message DirectedWeightedGraph
+{
+	repeated Edge edges = 1;
+	repeated IncidenceList incidence_list = 2;
+}
