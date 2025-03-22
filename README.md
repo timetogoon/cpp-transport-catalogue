@@ -218,3 +218,4 @@ transport_catalogue.exe process_requests <requests.json >out.txt
 
 Ниже представлен ответ на данный запрос в виде картинки:
 
+![](/examples/example_map_2.jpg)
