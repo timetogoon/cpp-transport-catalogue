@@ -36,7 +36,7 @@ https://github.com/protocolbuffers/protobuf/releases/tag/v21.12). Достато
 Из папки **build-debug** вызвать команды:  
 
 > cmake ../ -DCMAKE_BUILD_TYPE=Debug ^  
--DCMAKE_PREFIX_PATH=path/to/protobuf/package
+-DCMAKE_PREFIX_PATH=path/to/protobuf/package  
 > cmake --build . --config Debug   
 
 **Запуск и работа программы**
