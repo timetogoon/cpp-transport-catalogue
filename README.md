@@ -1,9 +1,43 @@
+**Установка Google protobuf v21.12**  
+
+Скачать можно по ссыле с официального [репозитория]( 
+https://github.com/protocolbuffers/protobuf/releases/tag/v21.12). Достатоно скачать **cpp** релиз.  
+
+Необходимо создать там же, куда скачан и разархивирован архив, создать папки **build-debug** и **build-release**. Также необходимо создать папку package в том месте, где будут храниться файлы готовых библиотек и вспомогательных файлов (назовем path/to/protobuf/package).
+Далее последует пример для *debug* сборки. Для *release* все аналогично. Устанавливать обе сборки можно в одну папку.
+
+Из папки **build-debug** вызвать команды:  
+
+> cmake ../ -DCMAKE_BUILD_TYPE=Debug  ^  
+-Dprotobuf_BUILD_TESTS=OFF ^  
+-DCMAKE_INSTALL_PREFIX=path/to/package  
+> cmake --build .  
+> cmake --install .
+
+Для сборки под Visual Studio другая последовательность: 
+
+> cmake ../ -DCMAKE_BUILD_TYPE=Debug  ^  
+-Dprotobuf_BUILD_TESTS=OFF ^  
+-Dprotobuf_MSVC_STATIC_RUNTIME=OFF ^  
+-DCMAKE_INSTALL_PREFIX=path/to/protobuf/package  
+> cmake --build . --config Debug    
+> cmake --install . --config Debug 
+
 **Программа Транспортный справочник**
 
 На вход подаются данные JSON-формата и выдается ответ в виде SVG-файла с визуализацией остановок и маршрутов.  
 Находит кратчайший маршрут между остановками.  
-Реализована сериализация и десериализация базы справочника через Google Protobuf v21.02.
+Реализована сериализация и десериализация базы справочника через Google Protobuf v21.12
 
+**Установка**  
+
+В архиве имеется файл *CMakeLists* для установки через *cmake*. Необходимо лишь создать папки **build-debug** и **build-release** там же, где сачан и разархивирован архив. Далее последует пример для *debug* сборки. Для *release* аналогично.
+
+Из папки **build-debug** вызвать команды:  
+
+> cmake ../ -DCMAKE_BUILD_TYPE=Debug ^  
+-DCMAKE_PREFIX_PATH=path/to/protobuf/package
+> cmake --build . --config Debug   
 
 **Запуск и работа программы**
 
